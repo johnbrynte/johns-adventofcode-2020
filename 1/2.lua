@@ -1,8 +1,11 @@
 -- Uppgift 2
 ------------------
+AnimatedText = require("1.AnimatedText")
+
 function love.load()
     love.graphics.setBackgroundColor({0.8, 0.8, 0.8})
 
+    local input = love.filesystem.read("1/input.txt")
     data = {}
     for line in string.gmatch(input, "%d+") do
         table.insert(data, line)
