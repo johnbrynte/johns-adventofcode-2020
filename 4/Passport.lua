@@ -40,18 +40,76 @@ function Passport.new(o)
     return o
 end
 
-function Passport.mt.isValid(o, attr)
+function Passport.mt.isValid(o, attr, rules)
+    rules = rules or {}
+
     if attr ~= nil then
         -- skip "cid"
         if attr == "cid" then
             return true
         end
+
+        if rules[attr] then
+            if o[attr] == nil then
+                return false
+            end
+
+            local rule = rules[attr]
+            if rule["type"] == "year" then
+                if o[attr]:len() ~= 4 then
+                    return false
+                end
+
+                -- year
+                local num = tonumber(o[attr])
+                if num >= rule["min"] and num <= rule["max"] then
+                    return true
+                end
+            elseif rule["type"] == "length" then
+                -- length
+                for num, unit in o[attr]:gmatch("([0-9]+)([a-z]+)") do
+                    if not num or not rule[unit] then
+                        return false
+                    end
+
+                    local r = rule[unit]
+                    num = tonumber(num)
+                    if num >= r["min"] and num <= r["max"] then
+                        return true
+                    end
+                end
+            elseif rule["type"] == "color" then
+                -- color
+                for color in o[attr]:gmatch(
+                                 "(#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])") do
+                    if color then
+                        return true
+                    end
+                end
+            elseif rule["type"] == "string" then
+                -- string
+                for _, val in ipairs(rule["list"]) do
+                    if val == o[attr] then
+                        return true
+                    end
+                end
+            elseif rule["type"] == "id" then
+                -- id
+                for id in o[attr]:gmatch("([0-9]+)") do
+                    if id and id:len() == rule["length"] then
+                        return true
+                    end
+                end
+            end
+            return false
+        end
+
         return o[attr] ~= nil
     end
 
     local valid = true
     for _, attr in ipairs(Passport.attributes) do
-        valid = valid and Passport.mt.isValid(o, attr)
+        valid = valid and Passport.mt.isValid(o, attr, rules)
     end
     return valid
 end
