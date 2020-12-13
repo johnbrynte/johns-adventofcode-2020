@@ -9,4 +9,4 @@ if arg[3] then
     problem = arg[3]
 end
 
-require(string.format("%d.%d", day, problem))
+require(string.format("%s.%s", day, problem))

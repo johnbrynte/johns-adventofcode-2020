@@ -50,6 +50,7 @@ Animate.mt = {
     tick = 0,
     _tick = 0,
     delay = 0,
+    _delay = nil,
     duration = 1,
     callback = function()
     end,
@@ -63,6 +64,11 @@ function Animate.new(o)
     o = o or {}
     setmetatable(o, Animate.mt)
     table.insert(Animate, o)
+    if o._delay then
+        o.delay = o._delay
+    else
+        o._delay = o.delay -- save original value
+    end
     return o
 end
 
@@ -80,9 +86,37 @@ function Animate.update(dt)
     end
 
     if #remove > 0 then
-        for i = #remove, 1 do
+        for i = #remove, 1, -1 do
             table.remove(Animate, remove[i])
         end
+    end
+end
+
+function Animate.animateTo(values, callback)
+    local fromto = {}
+    local fromtoVals = {}
+
+    if #values == 2 and type(values[1]) == "number" and type(values[2]) ==
+        "number" then
+        table.insert(fromto, {values[1], values[2]})
+        table.insert(fromtoVals, 0)
+    else
+        for _, val in ipairs(values) do
+            if type(val) ~= "table" then
+                error("Invalid argument input")
+            end
+
+            table.insert(fromto, val)
+            table.insert(fromtoVals, 0)
+        end
+    end
+
+    return function(t)
+        for i, val in ipairs(fromto) do
+            fromtoVals[i] = val[1] + (val[2] - val[1]) * t
+        end
+
+        callback(unpack(fromtoVals))
     end
 end
 
