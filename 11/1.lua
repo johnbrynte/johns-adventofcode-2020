@@ -16,6 +16,7 @@ local color_seat = color.hex("aaaaaa")
 local color_person = color.hex("ff5555")
 
 local function tick()
+    -- print("---------------")
     Seat.scanSurrounding()
     local updated = Seat.tick()
     Person.walk()
@@ -81,6 +82,7 @@ function love.load()
         rowIndex = rowIndex + 1
     end
 
+    Seat.setSeats(seats)
     Person.setSize(#seats[1], #seats)
 
     for i = 1, #Seat.list do

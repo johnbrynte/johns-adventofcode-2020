@@ -11,7 +11,10 @@ Seat = {
         BL = "FR",
         BR = "FL"
     },
-    list = {}
+    world = {width = 0, height = 0},
+    seats = nil,
+    list = {},
+    rules = {iterative = false, occupied = {0, 0}, free = {4, 8}}
 }
 
 Seat.mt = {
@@ -41,6 +44,12 @@ function Seat.new(o)
     return o
 end
 
+function Seat.setSeats(seats)
+    Seat.seats = seats
+    Seat.world.width = #seats[1]
+    Seat.world.height = #seats
+end
+
 function Seat.scanSurrounding()
     for _, seat in ipairs(Seat.list) do
         seat:scanSurrounding()
@@ -67,30 +76,89 @@ function Seat.mt.addNeighbor(o, dir, seat)
 end
 
 function Seat.mt.scanSurrounding(o)
-    local freeSeats = 0
     local occupiedSeats = 0
 
+    -- print("-= scan =-")
+    -- print(string.format("seat (%d,%d)", o.col, o.row))
+
     for _, dir in ipairs(Seat.directions) do
-        local seat = o.neighbors[dir]
-        if seat then
-            if seat.occupied then
-                occupiedSeats = occupiedSeats + 1
-            else
-                freeSeats = freeSeats + 1
-            end
+        local seat
+
+        if Seat.rules.iterative then
+            seat = o:search(dir)
+        else
+            seat = o.neighbors[dir]
+        end
+
+        if seat and seat.occupied then
+            occupiedSeats = occupiedSeats + 1
         end
     end
 
     o._next = nil -- no change
     if o.occupied then
-        if occupiedSeats >= 4 then
+        if occupiedSeats >= Seat.rules.free[1] and occupiedSeats <=
+            Seat.rules.free[2] then
             o._next = {occupied = false}
         end
     else
-        if occupiedSeats == 0 then
+        if occupiedSeats >= Seat.rules.occupied[1] and occupiedSeats <=
+            Seat.rules.occupied[2] then
             o._next = {occupied = true}
         end
     end
+end
+
+function Seat.mt.search(o, dir)
+    -- if o.occupied then
+    --     return o
+    -- end
+    local seat = o.neighbors[dir]
+    if seat then
+        return seat
+    else
+        return o:jumpSearch(dir)
+    end
+end
+
+function Seat.mt.jumpSearch(o, dir)
+    local col = o.col
+    local row = o.row
+    local x = 0
+    local y = 0
+
+    if string.match(dir, "F") then
+        y = -1
+    elseif string.match(dir, "B") then
+        y = 1
+    end
+    if string.match(dir, "L") then
+        x = -1
+    elseif string.match(dir, "R") then
+        x = 1
+    end
+
+    -- print(string.format("- jump %s (%d, %d)", dir, col, row))
+    col = col + x
+    row = row + y
+    local seat = nil
+    repeat
+        seat = Seat.seats[row] and Seat.seats[row][col]
+        -- print(string.format("  - %s (%d, %d)",
+        --                     seat and seat.seat and "seat" or "floor", col, row))
+
+        col = col + x
+        row = row + y
+    until not seat or seat.seat
+
+    -- found a seat
+    return seat
+
+    -- if seat.occupied then
+    --     return seat
+    -- end
+    -- continue normal search
+    -- return seat:search(dir)
 end
 
 function Seat.mt.addPerson(o, person)
